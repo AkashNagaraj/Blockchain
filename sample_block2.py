@@ -25,6 +25,7 @@ def main():
     index = 0
     transactions = 1
     timestamp = time.time()
+    print("Building first block")
     block = Block(index, transactions, timestamp, None, nonce=0) 
     chains.append(block.compute_hash())
 
