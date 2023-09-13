@@ -1,3 +1,4 @@
+import numpy as np
 from datetime import date
 from cryptography.fernet import Fernet
 import json, ast
@@ -20,7 +21,7 @@ def accept_new_node(initial_graph_data):
     for val in initial_graph_data[:10]:
         transaction_count[ast.literal_eval(decrypt_data(val))["aadhar"]] = int(ast.literal_eval(decrypt_data(val))["transaction_count"])
    
-    print(transaction_count)
+    print(list(transaction_count))
     
     # add the chosen persons id to every node
     # accept the person within time t
@@ -65,7 +66,8 @@ def get_random_values():
         sys.exit()
 
     # Aadhar Number 
-    random_data = {"name":df.iloc[idx][0], "gender":df.iloc[idx][1], "DOB":birth_date, "aadhar":get_aadhar(), "transaction_count":0}
+    transaction_count = random.randint(1,25)
+    random_data = {"name":df.iloc[idx][0], "gender":df.iloc[idx][1], "DOB":birth_date, "aadhar":get_aadhar(), "transaction_count":transaction_count}
     return(random_data)
 
 
@@ -86,10 +88,17 @@ def initialize_blockchain(n):
     return blockchain_network
 
 
+def create_graph(n):
+    random_matrix = np.random.rand(n,n)
+    adjacency_matrix = (random_matrix + random_matrix.T)/2
+    return adjacency_matrix
+
+
 def main():
     n = 10
     initial_graph_data = initialize_blockchain(n)
-    #new_node = get_new_node()
+    adjacency_matrix = create_graph(n)
+    new_node = get_new_node()
     accept_new_node(initial_graph_data)
 
 
