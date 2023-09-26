@@ -1,31 +1,40 @@
 import numpy as np
 from datetime import date
 from cryptography.fernet import Fernet
-import json, ast
 
+import collections, json, ast, math, random, sys, time
 import pandas as pd
-import math
-import random
-import sys
 
 key = Fernet.generate_key()
 f = Fernet(key)
 
 
+def get_answer(v1,v2):
+    return True
+
+
 # Implement proof of stake to accept a new node
-def accept_new_node(initial_graph_data):
+def accept_new_node(new_node, initial_graph_data):
     print("Accepting a new node by implementing proof of stake based on the number of transactions performed")
     
+    # transaction_count has aadhar:no_transactions as a dictionary
     transaction_count = {}
-
     for val in initial_graph_data[:10]:
         transaction_count[ast.literal_eval(decrypt_data(val))["aadhar"]] = int(ast.literal_eval(decrypt_data(val))["transaction_count"])
    
-    print(list(transaction_count))
+    all_transactions = list(collections.Counter(transaction_count).elements())
+    start_time = time.time()
+    idx = random.randint(0,len(all_transactions))
+    chosen_person1 = all_transactions[idx]
     
-    # add the chosen persons id to every node
-    # accept the person within time t
-    # use backup person
+    remaining_transactions = [val for val in all_transactions if val != chosen_person1]
+    idx = random.randint(0,len(all_transactions))
+    chosen_person2 = remaining_transactions[idx]
+    
+    if get_answer(chosen_person1, chosen_person2)==True:
+        return chosen_person1
+    else:
+        return new_node["aadhar"]
 
 
 def get_new_node():
@@ -84,28 +93,38 @@ def initialize_blockchain(n):
     blockchain_network = []
     for i in range(n):
         data = get_random_values()
-        blockchain_network.append(encrypt_data(data))
+        encrypted_data = encrypt_data(data)
+        print("The current data is : {}, encypted as : {}".format(data, encrypted_data))
+        blockchain_network.append(encrypted_data)
     return blockchain_network
 
 
 def create_graph(n):
     random_matrix = np.random.rand(n,n)
-    adjacency_matrix = (random_matrix + random_matrix.T)/2
-    return adjacency_matrix
+    #random_matrix = (random_matrix + random_matrix.T)/2
+    return random_matrix
+
+
+def update_graph():
+    return    
 
 
 def main():
-    n = 10
+    n = 4
     initial_graph_data = initialize_blockchain(n)
     adjacency_matrix = create_graph(n)
     new_node = get_new_node()
-    accept_new_node(initial_graph_data)
-
+    connection = accept_new_node(new_node,initial_graph_data)
+    if connection!=new_node["aadhar"]:
+        update_graph()
 
 main()
 
 """
 Questions
-1) How will it prevent hackers from entering the blockchain
-2) 
+1) How will it prevent hackers from entering the blockchain [Data is hashed]
+2) Edge weight [transaction count]
+3) Features [phone number, place, card limit, age, gender, avg income, single/married, card company]
+4) Finally detect how far node is from the initial blockchain nodes [semi supervised classification problem]
 """
+
