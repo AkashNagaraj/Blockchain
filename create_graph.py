@@ -27,12 +27,34 @@ def add_nodes(G,l):
     add_edges(G,l)
 
 
+def plot_graph(G):
+    pos = nx.circular_layout(G)
+    nx.draw_networkx(G,pos)
+    labels = nx.get_edge_attributes(G,'weight')
+    nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
+    plt.show()
+
+
+def dummy_graph(n):
+    G = nx.Graph()
+    for i in range(n):
+        G.add_node(i)
+
+    for i in range(n):
+        for j in range(i+1,n):
+            G.add_edge(i,j)
+            G[i][j]["weight"] = random.randint(1,9)
+    #plot_graph(G)
+    return G
+
 def main():
     num_nodes = 15
     l = [val for val in range(15)]
     G1 = nx.Graph()
     add_nodes(G1,l)
     #G2 = nx.complete_graph(10)
+    num_nodes = 10
+    G = dummy_graph(num_nodes)
 
 if __name__=="__main__":
     main()

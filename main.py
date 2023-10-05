@@ -1,9 +1,14 @@
+import sklearn
+from sklearn import preprocessing
 import numpy as np
 from datetime import date
 from cryptography.fernet import Fernet
 
-import collections, json, ast, math, random, sys, time
+import collections, csv, json, ast, math, random, sys, time
 import pandas as pd
+import networkx as nx
+
+import matplotlib.pyplot as plt
 
 key = Fernet.generate_key()
 f = Fernet(key)
@@ -50,35 +55,6 @@ def get_new_node():
     return new_node
 
 
-def get_aadhar():
-    s = ""
-    for i in range(16):
-        s += str(random.randint(1,9))
-    return int(s) 
-def get_random_values():
-    
-    # Name
-    df = pd.read_csv("data/names.csv")
-    idx = math.ceil(random.random()*df.shape[0])
-    
-    # Birthdate
-    year = random.randint(1980,2005)
-    month = random.randint(1,12)
-    if month==2:
-        day = random.randint(1,28)
-    else:
-        day = random.randint(1,30)
-    try:
-        birth_date = date(year,month,day)
-    except:
-        print("Year : {}, Month : {}, Day : {}".format(year,month,day))
-        sys.exit()
-
-    # Aadhar Number 
-    transaction_count = random.randint(1,25)
-    random_data = {"name":df.iloc[idx][0], "gender":df.iloc[idx][1], "DOB":birth_date, "aadhar":get_aadhar(), "transaction_count":transaction_count}
-    return(random_data)
-
 
 # Encrypt and decrypt the node data 
 def decrypt_data(encrypt_data):
@@ -88,29 +64,110 @@ def encrypt_data(data):
     return encrypt
 
 
+def convert_to_json(csvFilePath, jsonFilePath):
+
+    # create a dictionary
+    data = {}
+
+    # Open a csv reader called DictReader
+    with open(csvFilePath, encoding='utf-8') as csvf:
+        csvReader = csv.DictReader(csvf)
+
+        # Convert each row into a dictionary
+        # and add it to data
+        for rows in csvReader:
+
+            # Assuming a column named 'No' to
+            # be the primary key
+            key = rows['Aadhar']
+            data[key] = rows
+
+    # Open a json writer, and use the json.dumps()
+    # function to dump data
+    with open(jsonFilePath, 'w', encoding='utf-8') as jsonf:
+        jsonf.write(json.dumps(data, indent=4))
+
+
+def read_data(file):
+    f = open(file)
+    data = json.load(f)
+    return(data) 
+
+
 # Add the initial n nodes to the network 
 def initialize_blockchain(n):
+    dataframe = read_data()
+    
+    convert_to_json("data/Personal_Info.csv","data/Personal_Info.csv")
     blockchain_network = []
+    sys.exit()
+
     for i in range(n):
-        data = get_random_values()
         encrypted_data = encrypt_data(data)
         print("The current data is : {}, encypted as : {}".format(data, encrypted_data))
         blockchain_network.append(encrypted_data)
     return blockchain_network
 
 
-def create_graph(n):
-    random_matrix = np.random.rand(n,n)
-    #random_matrix = (random_matrix + random_matrix.T)/2
-    return random_matrix
+def plot_graph(G):
+    pos = nx.circular_layout(G)
+    nx.draw_networkx(G,pos)
+    labels = nx.get_edge_attributes(G,'weight')
+    nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
+    plt.show()
 
 
-def update_graph():
-    return    
+def build_graph(data):
+    G = nx.Graph()
+    all_nodes = list(data.keys())
+    for node in all_nodes:
+        G.add_node(node)
+    
+    n = len(all_nodes)
+    for i in range(n):
+        for j in range(i+1,n):
+            G.add_edge(all_nodes[i],all_nodes[j])
+            G[all_nodes[i]][all_nodes[j]]['weight'] = data[all_nodes[i]]["Total_transactions"] + data[all_nodes[j]]["Total_transactions"]
+    
+    # Plot the graph along with the edge weights
+    #plot_graph(G)   
+    return G
+
+
+def convert_to_text(df):
+    df.to_csv('data/graph_features.txt', sep='\t', index=True)
+
+
+def build_data(csv_file):
+    df = pd.read_csv(csv_file)
+    df.set_index("Aadhar",inplace=True)
+    
+    important_columns = ["Gender","Total_transactions","Residence","Age","Avg_Income","Relationship","Bank","Class"]
+    df = df[important_columns]
+    categorical_columns = df.select_dtypes(exclude=["number"]).columns
+    
+    label_encoder = preprocessing.LabelEncoder()
+    for columns in categorical_columns:
+        df[columns] = label_encoder.fit_transform(df[columns])
+    
+    #print(df.head())
+    convert_to_text(df)
+
+
+def write_nodes(L):
+    file = open("data/graph_edges.txt","w")
+    for val in L:
+        file.write(str(val[0] + "\t" + val[1] + "\n"))
 
 
 def main():
     n = 4
+    convert_to_json("data/Personal_Info.csv","data/Personal_Info.json")
+    json_data = read_data("data/Personal_Info.json")
+    G = build_graph(json_data)
+    build_data("data/Personal_Info.csv")
+    write_nodes(G.edges())
+    sys.exit()
     initial_graph_data = initialize_blockchain(n)
     adjacency_matrix = create_graph(n)
     new_node = get_new_node()
