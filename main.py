@@ -1,59 +1,79 @@
 import sklearn
+from itertools import combinations
 from sklearn import preprocessing
 import numpy as np
 from datetime import date
 from cryptography.fernet import Fernet
+from create_dataset import build_random_dataset
 
 import collections, csv, json, ast, math, random, sys, time
 import pandas as pd
 import networkx as nx
 
 import matplotlib.pyplot as plt
+sys.path.insert(1,"/home/akash/Desktop/Sem3/Project/Blockchain/torchGCN")
+from train import train_model
 
 key = Fernet.generate_key()
 f = Fernet(key)
 
 
-def get_answer(v1,v2):
+def get_answer(v1):
+    # Randomly select true or false or get input from another user on another server
+    #return random.choice([True, False])
     return True
 
-
 # Implement proof of stake to accept a new node
-def accept_new_node(new_node, initial_graph_data):
-    print("Accepting a new node by implementing proof of stake based on the number of transactions performed")
+def accept_new_node():
     
-    # transaction_count has aadhar:no_transactions as a dictionary
-    transaction_count = {}
-    for val in initial_graph_data[:10]:
-        transaction_count[ast.literal_eval(decrypt_data(val))["aadhar"]] = int(ast.literal_eval(decrypt_data(val))["transaction_count"])
-   
-    all_transactions = list(collections.Counter(transaction_count).elements())
+    print(" Verifying a new node by implementing proof of stake based on the number of transactions performed")
+    existing_df = pd.read_csv("data/dataset.csv")
+    aadhar_details = existing_df["Aadhar"]
+    node_class = existing_df["Class"]
+    transaction_count = existing_df["Total_transaction"]
+
+    d = dict(zip(aadhar_details,transaction_count))
+    all_transactions = list(collections.Counter(d).elements())
     start_time = time.time()
-    idx = random.randint(0,len(all_transactions))
-    chosen_person1 = all_transactions[idx]
+    idx = random.randint(0,len(all_transactions)-1)
+    chosen_person = all_transactions[idx]
+    class_type = existing_df.loc[existing_df["Aadhar"]==chosen_person,"Class"]
+
+    return get_answer(chosen_person), class_type
+
+
+def new_node_features():
     
-    remaining_transactions = [val for val in all_transactions if val != chosen_person1]
-    idx = random.randint(0,len(all_transactions))
-    chosen_person2 = remaining_transactions[idx]
-    
-    if get_answer(chosen_person1, chosen_person2)==True:
-        return chosen_person1
-    else:
-        return new_node["aadhar"]
+    df = pd.read_csv("data/temp_node.csv")
+    important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank"]
+    df = df[important_columns]
+    df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
+    df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
+    features = df.to_numpy()
+    return features
 
 
 def get_new_node():
-    name = input("Enter your name : ")
-    gender = input("Enter your gender [girl/boy/other]: ")
-    try:
-        year, month, day = map(int, input("Enter your DOB in the format - [yyyy:mm:dd] ").split(":"))
-        DOB = date(year,month,day)
-    except:
-        print("The DOB data was not entered accurately")  
-    aadhar = input("Enter your 16 digit aadhar number")
-    new_node = {"name":name,"gender":gender,"DOB":DOB,"aadhar":aadhar,"transaction_count":0}
-    return new_node
+    read_new_node()
+    features = new_node_features()
+    return features
 
+
+def read_new_node():
+    name = input("Enter your name : ")
+    gender = input("Enter your gender [girl/boy/other] : ")
+    aadhar = input("Enter your 16 digit aadhar number : ")
+    total_transactions = 0
+    phone_num = input("Enter your phone number : ")
+    residence = input("Enter your city [Bangalore,Kolkata,Chennai,Delhi] : ")
+    age = int(input("Enter your age : "))
+    avg_income = int(input("Enter your yearly income in lakhs : "))
+    relationship = input("Enter your relationship [Single/Married] : ")
+    bank = input("Enter your bank name[ICICI,SBI,Axis,Canara] : ")
+    df = pd.DataFrame({"Name":name,"Gender":gender,"Aadhar":aadhar,"Total_transaction":0,"Phone_Number":phone_num,"Residence":residence,"Age":age,"Avg_Income":avg_income,"Relationship":relationship,"Bank":bank},index=[0])
+    df.to_csv("data/temp_node.csv",index=False)
 
 
 # Encrypt and decrypt the node data 
@@ -117,63 +137,95 @@ def plot_graph(G):
     plt.show()
 
 
-def build_graph(data):
+def build_graph():
     G = nx.Graph()
-    all_nodes = list(data.keys())
+    df = pd.read_csv("data/dataset.csv")
+    all_nodes = df.index
+    
     for node in all_nodes:
         G.add_node(node)
     
-    n = len(all_nodes)
-    for i in range(n):
-        for j in range(i+1,n):
-            G.add_edge(all_nodes[i],all_nodes[j])
-            G[all_nodes[i]][all_nodes[j]]['weight'] = data[all_nodes[i]]["Total_transactions"] + data[all_nodes[j]]["Total_transactions"]
-    
+    edges = list(combinations(all_nodes,2))
+    for edge in edges:
+        G.add_edge(edge[0],edge[1])
+        G[edge[0]][edge[1]]["weight"] = df.iloc[edge[0]]["Total_transaction"] + df.iloc[edge[1]]["Total_transaction"] 
+     
     # Plot the graph along with the edge weights
-    #plot_graph(G)   
+    # plot_graph(G)   
     return G
 
 
 def convert_to_text(df):
-    df.to_csv('data/graph_features.txt', sep='\t', index=True)
+    df.to_csv('data/graph_data/graph.features', sep='\t',header=False, index=True)
 
 
-def build_data(csv_file):
+def build_graph_features(csv_file):
     df = pd.read_csv(csv_file)
-    df.set_index("Aadhar",inplace=True)
+    df.set_index("Index",inplace=True)
     
-    important_columns = ["Gender","Total_transactions","Residence","Age","Avg_Income","Relationship","Bank","Class"]
+    important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank","Class"]
     df = df[important_columns]
-    categorical_columns = df.select_dtypes(exclude=["number"]).columns
     
-    label_encoder = preprocessing.LabelEncoder()
-    for columns in categorical_columns:
-        df[columns] = label_encoder.fit_transform(df[columns])
-    
-    #print(df.head())
-    convert_to_text(df)
+    df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
+    df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
 
+    convert_to_text(df)
+    
 
 def write_nodes(L):
-    file = open("data/graph_edges.txt","w")
+    file = open("data/graph_data/graph.edges","w")
     for val in L:
-        file.write(str(val[0] + "\t" + val[1] + "\n"))
+        file.write(str(str(val[0]) + "\t" + str(val[1]) + "\n"))
+
+
+def add_to_existing_dataframe(node_type):
+    df1 = pd.read_csv("data/dataset.csv")
+    df2 = pd.read_csv("data/temp_node.csv")
+    df2["Class"] = node_type
+    df2["Index"] = df1.shape[0]
+    print(df2)
+    new_df = pd.concat([df1,df2])
+    new_df.set_index("Index")
+    new_df.to_csv("data/dataset.csv",index=False) 
 
 
 def main():
-    n = 4
-    convert_to_json("data/Personal_Info.csv","data/Personal_Info.json")
-    json_data = read_data("data/Personal_Info.json")
-    G = build_graph(json_data)
-    build_data("data/Personal_Info.csv")
-    write_nodes(G.edges())
-    sys.exit()
-    initial_graph_data = initialize_blockchain(n)
-    adjacency_matrix = create_graph(n)
-    new_node = get_new_node()
-    connection = accept_new_node(new_node,initial_graph_data)
-    if connection!=new_node["aadhar"]:
-        update_graph()
+    # Build a random dataset 
+    n = int(input("Enter number of users : "))
+    build_random_dataset(n)
+    
+    check = True
+    while check:
+        # Convert csv to graph
+        G = build_graph()
+    
+        # Add edges and nodes in the graph
+        categorical_codes = build_graph_features("data/dataset.csv")
+        write_nodes(G.edges())
+    
+        # Get new node
+        new_node_features = get_new_node()
+    
+        # Train the graph
+        # print("The new node features are:",new_node_features)
+        # train_model(new_node_features)
+
+        # Proof of stake to add it to the graph
+        validation, class_type = accept_new_node()
+        
+        if validation:
+            add_to_existing_dataframe(class_type)    
+        else:
+            print("The node has been rejected by PoS")
+
+        choice = input("Validate some more nodes [Y/N]? : ")
+
+        if choice=="N":
+            check=False
+    
+    print("Halting execution")
 
 main()
 

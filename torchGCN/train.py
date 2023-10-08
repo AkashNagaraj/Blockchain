@@ -87,22 +87,33 @@ def train(epoch):
 
 def test():
     model.eval()
+    print(features.shape,features.dtype)
     output = model(features, adj)
     loss_test = F.nll_loss(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
     print("Test set results:",
           "loss= {:.4f}".format(loss_test.item()),
           "accuracy= {:.4f}".format(acc_test.item()))
-    model.load_state_dict(torch.load("model_weights.pth"))
-    #inputs = torch.random.rand()
-    #pred = model(inputs)
+    # Save the model 
+    torch.save(model.state_dict(),"data/model_weights.pt")
+
+
+def predict(node_data):
+    model.eval()
+    input_feature = torch.tensor(node_data,dtype=torch.float32)
+    print(input_feature.shape)
+    output = model(input_feature, adj)
+    print("The model output is : ",output)
+
 
 # Train model
-t_total = time.time()
-for epoch in range(args.epochs):
-    train(epoch)
-print("Optimization Finished!")
-print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+def train_model(input_data):
+    t_total = time.time()
+    for epoch in range(args.epochs):
+        train(epoch)
+    print("Optimization Finished!")
+    print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
+    # Testing
+    test()
+    predict(input_data)
 
-# Testing
-test()
