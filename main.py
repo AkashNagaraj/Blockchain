@@ -81,6 +81,7 @@ def decrypt_data(encrypt_data):
     return f.decrypt(encrypt_data).decode()
 def encrypt_data(data):
     encrypt = f.encrypt(json.dumps(data, default=str).encode('utf-8'))
+    #encypt = f.encrypt(data)
     return encrypt
 
 
@@ -191,11 +192,32 @@ def add_to_existing_dataframe(node_type):
     new_df.to_csv("data/dataset.csv",index=False) 
 
 
+def build_chain():
+    df = pd.read_csv("data/dataset.csv")
+
+    previous_hash = [0]
+    initial_data = df.iloc[0].to_dict()
+    block_data = {"time":time.time(),"previous_hash":previous_hash[-1],"data":initial_data}
+    hashed_data = encrypt_data(block_data) # decrypt_data(hashed_data)
+    previous_hash.append(hashed_data)
+
+    for idx in range(1,df.shape[0]):
+        data = df.iloc[idx].to_dict()
+        block_data = {"time":time.time(),"previous_hash":previous_hash[-1],"data":data}
+        hashed_data = encrypt_data(block_data)
+        previous_hash.append(hashed_data)
+    
+    print(previous_hash)
+
+
 def main():
     # Build a random dataset 
     n = int(input("Enter number of users : "))
     build_random_dataset(n)
     
+    build_chain()
+    sys.exit()
+
     check = True
     while check:
         # Convert csv to graph
