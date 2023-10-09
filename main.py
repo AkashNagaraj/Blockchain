@@ -23,6 +23,7 @@ def get_answer(v1):
     #return random.choice([True, False])
     return True
 
+
 # Implement proof of stake to accept a new node
 def accept_new_node():
     
@@ -192,6 +193,15 @@ def add_to_existing_dataframe(node_type):
     new_df.to_csv("data/dataset.csv",index=False) 
 
 
+def write_hash_to_file(L):
+    # open file in write mode
+    with open(r'data/hash_values.txt', 'w') as fp:
+        for item in L:
+            # write each item on a new line
+            fp.write("%s\n" % item)
+        print('Done')
+
+
 def build_chain():
     df = pd.read_csv("data/dataset.csv")
 
@@ -205,19 +215,30 @@ def build_chain():
         data = df.iloc[idx].to_dict()
         block_data = {"time":time.time(),"previous_hash":previous_hash[-1],"data":data}
         hashed_data = encrypt_data(block_data)
+        print("The block data is :", block_data)
+        print("The decrypted value is :", decrypt_data(hashed_data))
         previous_hash.append(hashed_data)
-    
-    print(previous_hash)
+
+    return previous_hash
+
+
+def append_blockchain(hashed_chain):
+    df = pd.read_csv("data/dataset.csv")
+    data = df.iloc[-1].to_dict()
+    block_data = {"time":time.time(),"previous_hash":hashed_chain[-1],"data":data}
+    hashed_data = encrypt_data(block_data) # decrypt_data(hashed_data)
+    hash_chain.append(hashed_data)
+    return hash_chain
 
 
 def main():
     # Build a random dataset 
     n = int(input("Enter number of users : "))
     build_random_dataset(n)
+   
+    # Build a blockchain
+    hashed_chain = build_chain()
     
-    build_chain()
-    sys.exit()
-
     check = True
     while check:
         # Convert csv to graph
@@ -239,6 +260,7 @@ def main():
         
         if validation:
             add_to_existing_dataframe(class_type)    
+            hashed_chain = append_blockchain(hashed_chain)
         else:
             print("The node has been rejected by PoS")
 
@@ -246,7 +268,9 @@ def main():
 
         if choice=="N":
             check=False
-    
+
+    write_hash_to_file(hashed_chain)
+
     print("Halting execution")
 
 main()
