@@ -1,6 +1,7 @@
 from __future__ import division
 from __future__ import print_function
 
+import pandas as pd
 import time
 import argparse
 import numpy as np
@@ -95,19 +96,37 @@ def test():
           "loss= {:.4f}".format(loss_test.item()),
           "accuracy= {:.4f}".format(acc_test.item()))
     # Save the model 
-    torch.save(model.state_dict(),"data/model_weights.pt")
+    torch.save(model.state_dict(),"../data/model_weights.pt")
 
 
-def predict(node_data):
-    model.eval()
-    input_feature = torch.tensor(node_data,dtype=torch.float32)
-    print(input_feature.shape)
-    output = model(input_feature, adj)
-    print("The model output is : ",output)
+def new_node_features():
+
+    df = pd.read_csv("../data/temp_node.csv")
+    important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank"]
+    df = df[important_columns]
+    df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
+    df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
+    features = df.to_numpy()
+    
+    return features
+
+
+def predict():
+    node_data = new_node_features()
+    input_features = torch.tensor(node_data,dtype=torch.float32)
+    adj, features, labels, idx_train, idx_val, idx_test = load_data()
+    
+    model = GCN(input_features,adj)
+    model.load_state_dict(torch.load("../data/model_weights.pt"))
+    print("The model weights are : ",weights.keys())
+    for key in weights.keys():
+        print(weights[key].shape)
 
 
 # Train model
-def train_model(input_data):
+def train_model():
     t_total = time.time()
     for epoch in range(args.epochs):
         train(epoch)
@@ -115,5 +134,6 @@ def train_model(input_data):
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
     # Testing
     test()
-    predict(input_data)
+    predict()
 
+train_model()

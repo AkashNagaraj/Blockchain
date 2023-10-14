@@ -11,8 +11,8 @@ import pandas as pd
 import networkx as nx
 
 import matplotlib.pyplot as plt
-sys.path.insert(1,"/home/akash/Desktop/Sem3/Project/Blockchain/torchGCN")
-from train import train_model
+#sys.path.insert(1,"/home/akash/Desktop/Sem3/Project/Blockchain/torchGCN/")
+#from train import train_model
 
 key = Fernet.generate_key()
 f = Fernet(key)
@@ -53,12 +53,6 @@ def new_node_features():
     df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
     df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
     features = df.to_numpy()
-    return features
-
-
-def get_new_node():
-    read_new_node()
-    features = new_node_features()
     return features
 
 
@@ -126,7 +120,7 @@ def initialize_blockchain(n):
 
     for i in range(n):
         encrypted_data = encrypt_data(data)
-        print("The current data is : {}, encypted as : {}".format(data, encrypted_data))
+        #print("The current data is : {}, encypted as : {}".format(data, encrypted_data))
         blockchain_network.append(encrypted_data)
     return blockchain_network
 
@@ -187,7 +181,6 @@ def add_to_existing_dataframe(node_type):
     df2 = pd.read_csv("data/temp_node.csv")
     df2["Class"] = node_type
     df2["Index"] = df1.shape[0]
-    print(df2)
     new_df = pd.concat([df1,df2])
     new_df.set_index("Index")
     new_df.to_csv("data/dataset.csv",index=False) 
@@ -215,8 +208,6 @@ def build_chain():
         data = df.iloc[idx].to_dict()
         block_data = {"time":time.time(),"previous_hash":previous_hash[-1],"data":data}
         hashed_data = encrypt_data(block_data)
-        print("The block data is :", block_data)
-        print("The decrypted value is :", decrypt_data(hashed_data))
         previous_hash.append(hashed_data)
 
     return previous_hash
@@ -227,8 +218,8 @@ def append_blockchain(hashed_chain):
     data = df.iloc[-1].to_dict()
     block_data = {"time":time.time(),"previous_hash":hashed_chain[-1],"data":data}
     hashed_data = encrypt_data(block_data) # decrypt_data(hashed_data)
-    hash_chain.append(hashed_data)
-    return hash_chain
+    hashed_chain.append(hashed_data)
+    return hashed_chain
 
 
 def main():
@@ -237,23 +228,14 @@ def main():
     build_random_dataset(n)
    
     # Build a blockchain
-    hashed_chain = build_chain()
+    hashed_chain = build_chain()    
+    print("The blockchain has been built")
     
-    check = True
-    while check:
-        # Convert csv to graph
-        G = build_graph()
-    
-        # Add edges and nodes in the graph
-        categorical_codes = build_graph_features("data/dataset.csv")
-        write_nodes(G.edges())
-    
+    check = input("Do you want to add a new block? [Y/N]")
+
+    while check=="Y":
         # Get new node
-        new_node_features = get_new_node()
-    
-        # Train the graph
-        # print("The new node features are:",new_node_features)
-        # train_model(new_node_features)
+        read_new_node()
 
         # Proof of stake to add it to the graph
         validation, class_type = accept_new_node()
@@ -264,10 +246,13 @@ def main():
         else:
             print("The node has been rejected by PoS")
 
-        choice = input("Validate some more nodes [Y/N]? : ")
+        check = input("Validate some more nodes [Y/N]? : ")
+    
+    G = build_graph()
 
-        if choice=="N":
-            check=False
+    # Add edges and nodes in the graph
+    categorical_codes = build_graph_features("data/dataset.csv")
+    write_nodes(G.edges())
 
     write_hash_to_file(hashed_chain)
 
