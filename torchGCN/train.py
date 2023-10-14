@@ -88,7 +88,6 @@ def train(epoch):
 
 def test():
     model.eval()
-    print(features.shape,features.dtype)
     output = model(features, adj)
     loss_test = F.nll_loss(output[idx_test], labels[idx_test])
     acc_test = accuracy(output[idx_test], labels[idx_test])
@@ -118,21 +117,22 @@ def predict():
     input_features = torch.tensor(node_data,dtype=torch.float32)
     adj, features, labels, idx_train, idx_val, idx_test = load_data()
     
-    model = GCN(input_features,adj)
+    model = GCN(7, 16, 2, 0.3) #  nfeat, nhid, nclass, dropout
     model.load_state_dict(torch.load("../data/model_weights.pt"))
-    print("The model weights are : ",weights.keys())
-    for key in weights.keys():
-        print(weights[key].shape)
+    output = model(torch.tensor(torch.randn(30,7),dtype=torch.float32),adj)
+    print("The model output : ",output)
 
 
 # Train model
 def train_model():
+    """
     t_total = time.time()
     for epoch in range(args.epochs):
         train(epoch)
     print("Optimization Finished!")
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
     # Testing
+    """
     test()
     predict()
 
