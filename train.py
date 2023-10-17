@@ -34,7 +34,7 @@ parser.add_argument('--dropout', type=float, default=0.5,
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
-np.random.seed(args.seed)
+#np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
@@ -95,12 +95,12 @@ def test():
           "loss= {:.4f}".format(loss_test.item()),
           "accuracy= {:.4f}".format(acc_test.item()))
     # Save the model 
-    torch.save(model.state_dict(),"../data/model_weights.pt")
+    torch.save(model.state_dict(),"data/model_weights.pt")
 
 
 def new_node_features():
 
-    df = pd.read_csv("../data/temp_node.csv")
+    df = pd.read_csv("data/temp_node.csv")
     important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank"]
     df = df[important_columns]
     df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
@@ -112,28 +112,30 @@ def new_node_features():
     return features
 
 
-def predict():
-    node_data = new_node_features()
+def predict(node_data):
+    #node_data = new_node_features()
     input_features = torch.tensor(node_data,dtype=torch.float32)
     adj, features, labels, idx_train, idx_val, idx_test = load_data()
-    
     model = GCN(7, 16, 2, 0.3) #  nfeat, nhid, nclass, dropout
-    model.load_state_dict(torch.load("../data/model_weights.pt"))
-    output = model(torch.tensor(torch.randn(30,7),dtype=torch.float32),adj)
-    print("The model output : ",output)
+    model.load_state_dict(torch.load("data/model_weights.pt"))
+    df = pd.read_csv("data/dataset.csv")
+    dummy_tensor = torch.randn((df.shape[0],7),dtype=torch.float32)
+    dummy_tensor[0] = torch.tensor(node_data,dtype=torch.float32)
+    output = model(dummy_tensor,adj)
+    m = torch.nn.Softmax(dim=1)
+    first_element = m(output)[0]
+    print("The class is :",torch.argmax(first_element))
+    return torch.argmax(first_element)
 
 
 # Train model
 def train_model():
-    """
     t_total = time.time()
     for epoch in range(args.epochs):
         train(epoch)
     print("Optimization Finished!")
     print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
     # Testing
-    """
     test()
-    predict()
 
-train_model()
+#train_model()
