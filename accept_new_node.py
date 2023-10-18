@@ -15,11 +15,20 @@ key = Fernet.generate_key()
 f = Fernet(key)
 
 
-def get_answer(model_prediction):
+def reduce_transaction_count(user_id):
+    df = pd.read_csv("data/dataset.csv") 
+    df[] = 
+    df.to_csv("")
+
+
+def get_answer(user_id,model_prediction):
     # Randomly select true or false or get input from another user on another server
     print("The GCN model thinks the new nodes is : ",model_prediction)
+    choice = 1 #random.choice([0,1])
+    if choice==1 and model_prediction.item()==0:
+        reduce_transaction_count(user_id)
     #return random.choice([0, 1])
-    return 1
+    return choice
 
 
 def new_node_features():
@@ -72,7 +81,7 @@ def accept_new_node(predicted_class):
     chosen_person = all_transactions[idx]
     
     #class_type = existing_df.loc[existing_df["Aadhar"]==chosen_person,"Class"]
-    class_type = get_answer(predicted_class)
+    class_type = get_answer(chose_person,predicted_class)
 
     return class_type
 
