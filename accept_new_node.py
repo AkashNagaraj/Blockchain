@@ -15,19 +15,29 @@ key = Fernet.generate_key()
 f = Fernet(key)
 
 
-def reduce_transaction_count(user_id):
+def update_transaction_count(user_id,choice,GCN_prediction):
     df = pd.read_csv("data/dataset.csv") 
-    df[] = 
-    df.to_csv("")
+    index = df.loc[df["Aadhar"]==user_id]["Index"]
+    print("Transaction count before :",df.loc[index,"Total_transaction"])
+
+    if choice==1 and GCN_prediction==0:
+        update = -5
+    elif choice==1 and GCN_prediction==1:
+        update = 2
+    else:
+        update = 0
+    df.loc[index,"Total_transaction"] = max(0,df.loc[index,"Total_transaction"] + update)
+
+    df.to_csv("data/dataset.csv",index_label=False) 
+    print("Transaction count after :",df.loc[index,"Total_transaction"])
 
 
 def get_answer(user_id,model_prediction):
     # Randomly select true or false or get input from another user on another server
     print("The GCN model thinks the new nodes is : ",model_prediction)
-    choice = 1 #random.choice([0,1])
-    if choice==1 and model_prediction.item()==0:
-        reduce_transaction_count(user_id)
-    #return random.choice([0, 1])
+    choice = random.choice([0,1])
+    GCN_prediction = model_prediction.item()
+    update_transaction_count(user_id,choice,GCN_prediction)
     return choice
 
 
@@ -81,7 +91,7 @@ def accept_new_node(predicted_class):
     chosen_person = all_transactions[idx]
     
     #class_type = existing_df.loc[existing_df["Aadhar"]==chosen_person,"Class"]
-    class_type = get_answer(chose_person,predicted_class)
+    class_type = get_answer(chosen_person,predicted_class)
 
     return class_type
 
@@ -115,7 +125,6 @@ def build_chain():
 
 def encrypt_data(data):
     encrypt = f.encrypt(json.dumps(data, default=str).encode('utf-8'))
-    #encypt = f.encrypt(data)
     return encrypt
 
 
@@ -163,27 +172,33 @@ def write_nodes(L):
 
 
 def update_graph():
-    # Build the blockchain
-    hashed_chain = build_chain()
-    # 1) Train the model
-    train_model()
-    # 2) Get new data
-    read_new_node()
-    new_features = new_node_features()
-    print("THe new node features are :",new_features)
-    # 3) Predict new data
-    predicted_class = predict(new_features)
-    class_type = accept_new_node(predicted_class)
+    check = "Y"
 
-    if class_type==1:
-        add_to_existing_dataframe(class_type)    
-        hashed_chain = append_blockchain(hashed_chain)
+    while check=="Y":
+        # Build the blockchain
+        hashed_chain = build_chain()
+        # Train the model
+        train_model()
+        # Get new data
+        read_new_node()
+        new_features = new_node_features()
+        print("The new node features are :",new_features)
+        # Predict new data
+        try:
+            predicted_class = predict(new_features)
+            class_type = accept_new_node(predicted_class)
 
-        G = build_graph()
-        build_graph_features("data/dataset.csv")
-        write_nodes(G.edges())
-    else:
-        print("The node has been rejected by PoS")
-
+            if class_type==1:
+                add_to_existing_dataframe(class_type)    
+                hashed_chain = append_blockchain(hashed_chain)
+                G = build_graph()
+                build_graph_features("data/dataset.csv")
+                write_nodes(G.edges())
+            else:
+                print("The node has been rejected by PoS")
+        except:
+            print("The information you have entered is incorrect please try again.")
+        
+        check = input("Do you want to continue : [Y/N]")
 
 update_graph()
