@@ -1,5 +1,5 @@
 from itertools import combinations
-from dummy_dataset import build_random_dataset
+from dataset import build_random_dataset
 
 import csv
 import pandas as pd
@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 
 
 def plot_graph(G):
-    pos = nx.circular_layout(G)
-    nx.draw_networkx(G,pos)
+    pos = nx.circular_layout(G) # circular,spring,random
+    nx.draw_networkx(G,pos,node_color="darkmagenta")
     labels = nx.get_edge_attributes(G,'weight')
     nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
     plt.show()
@@ -30,7 +30,7 @@ def build_graph():
         G[edge[0]][edge[1]]["weight"] = df.iloc[edge[0]]["Total_transaction"] + df.iloc[edge[1]]["Total_transaction"] 
      
     # Plot the graph along with the edge weights
-    # plot_graph(G)   
+    #plot_graph(G)   
     return G
 
 

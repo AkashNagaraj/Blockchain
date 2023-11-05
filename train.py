@@ -124,7 +124,6 @@ def predict(node_data):
     output = model(dummy_tensor,adj)
     m = torch.nn.Softmax(dim=1)
     first_element = m(output)[0]
-    print("The class is :",torch.argmax(first_element))
     return torch.argmax(first_element)
 
 

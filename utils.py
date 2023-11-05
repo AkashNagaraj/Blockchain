@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import scipy.sparse as sp
 import torch
@@ -18,6 +19,7 @@ def load_data(path="data/graph_data/", dataset="graph"): # cora
 
     idx_features_labels = np.genfromtxt("{}{}.features".format(path, dataset),
                                         dtype=np.dtype(str))
+    #print("Shape of features : ",idx_features_labels.shape)
     features = sp.csr_matrix(idx_features_labels[:, 1:-1], dtype=np.float32)
     labels = encode_onehot(idx_features_labels[:, -1])
 
@@ -37,10 +39,13 @@ def load_data(path="data/graph_data/", dataset="graph"): # cora
 
     features = normalize(features)
     adj = normalize(adj + sp.eye(adj.shape[0]))
+    
+    a = math.floor(0.80*idx_features_labels.shape[0])
+    b = math.floor(0.1*idx_features_labels.shape[0])
 
-    idx_train = range(10) #range(140)
-    idx_val = range(10,15) #range(200, 500)
-    idx_test = range(15,20) #range(500, 1500)
+    idx_train = range(a) 
+    idx_val = range(a,a+b) 
+    idx_test = range(a+b,idx_features_labels.shape[0]) #range(500, 1500)
 
     features = torch.FloatTensor(np.array(features.todense()))
     labels = torch.LongTensor(np.where(labels)[1])
