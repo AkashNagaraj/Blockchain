@@ -1,10 +1,10 @@
 from itertools import combinations
 from dataset import build_random_dataset
-
+import time
 import csv
 import pandas as pd
 import networkx as nx
-
+import sys
 import matplotlib.pyplot as plt
 
 
@@ -13,7 +13,8 @@ def plot_graph(G):
     nx.draw_networkx(G,pos,node_color="darkmagenta")
     labels = nx.get_edge_attributes(G,'weight')
     nx.draw_networkx_edge_labels(G,pos,edge_labels=labels)
-    plt.show()
+    #plt.show()
+    plt.savefig("graph.png")
 
 
 def build_graph():
@@ -30,7 +31,7 @@ def build_graph():
         G[edge[0]][edge[1]]["weight"] = df.iloc[edge[0]]["Total_transaction"] + df.iloc[edge[1]]["Total_transaction"] 
      
     # Plot the graph along with the edge weights
-    #plot_graph(G)   
+    plot_graph(G)   
     return G
 
 
@@ -46,7 +47,7 @@ def build_graph_features(csv_file):
     df = df[important_columns]
     
     df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
-    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata","Hyderabad"],[1,2,3,4,5,6],inplace=True)
     df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
     df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
 
@@ -57,7 +58,6 @@ def write_nodes(L):
     file = open("data/graph_data/graph.edges","w")
     for val in L:
         file.write(str(str(val[0]) + "\t" + str(val[1]) + "\n"))
-
 
 
 def write_hash_to_file(L):
@@ -72,8 +72,11 @@ def write_hash_to_file(L):
 def main():
     # Build a random dataset 
     n = int(input("Enter number of users : "))
+    start = time.time()
     build_random_dataset(n)
-   
+    end = time.time()
+    
+    print("The total seconds taken to build the dataset : ",(end-start))
     G = build_graph()
     build_graph_features("data/dataset.csv")
     write_nodes(G.edges())

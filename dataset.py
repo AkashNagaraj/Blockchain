@@ -23,7 +23,7 @@ def random_transaction_count():
     return random.randint(2,10)
 
 def random_residence():
-    L = ["Chennai","Delhi","Mumbai","Bangalore","Kolkata"]
+    L = ["Chennai","Delhi","Mumbai","Bangalore","Kolkata","Hyderabad"]
     return L[random.randint(0,len(L)-1)]
 
 def random_age(): 
@@ -63,8 +63,7 @@ def build_random_dataset(n):
     
     df = pd.DataFrame({"Name":name,"Gender":gender,"Aadhar":aadhar,"Total_transaction":transaction_count,"Phone_Number":number,
         "Residence":residence,"Age":age,"Avg_Income":income,"Relationship":relationship,"Bank":bank,"Class":category})
-    df.index.name = "Index"
-    
+    df.index.name = "Index" 
     df.to_csv("data/dataset.csv",index=True)
 
 #build_random_dataset(400)

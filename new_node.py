@@ -18,7 +18,7 @@ f = Fernet(key)
 def update_transaction_count(user_id,choice,GCN_prediction):
     df = pd.read_csv("data/dataset.csv") 
     index = df.loc[df["Aadhar"]==user_id]["Index"]
-    print("Transaction count before :",df.loc[index,"Total_transaction"].item())
+    print("Transaction count for the validating user before accepting node : ",df.loc[index,"Total_transaction"].item())
     if choice==1 and GCN_prediction==0:
         update = -5
     elif choice==1 and GCN_prediction==1:
@@ -30,13 +30,13 @@ def update_transaction_count(user_id,choice,GCN_prediction):
     updated_count = max(0,current_count + update)
     df.loc[index,"Total_transaction"] = updated_count
     df.to_csv("data/dataset.csv",index_label=False) 
-    print("Transaction count after :",df.loc[index,"Total_transaction"].item())
+    print("Transaction count after accepting node:",df.loc[index,"Total_transaction"].item())
 
 
 def get_answer(user_id,model_prediction):
     # Randomly select true or false or get input from another user on another server
     print("The GCN models prediction is : ",model_prediction.item())
-    choice = random.choice([0,1])
+    choice = int(input("Enter 1 to accept the user or 0 to reject : ")) #random.choice([0,1])
     print("The choice is : ",choice)
     GCN_prediction = model_prediction.item()
     update_transaction_count(user_id,choice,GCN_prediction)
@@ -48,7 +48,7 @@ def new_node_features():
     important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank"]
     df = df[important_columns]
     df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
-    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata","Hyderabad"],[1,2,3,4,5,6],inplace=True)
     df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
     df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
     features = df.to_numpy()
@@ -80,20 +80,26 @@ def valid_phone(num):
 
 def read_new_node():
     name = input("Enter your name : ")
-    gender = input("Enter your gender [girl/boy/other] : ")
+    gender = input("Enter your gender [girl/boy] : ")
     aadhar = input("Enter your 12 digit aadhar number : ")
     total_transactions = 0
     phone_num = input("Enter your 10 digit phone number : ")
-    residence = input("Enter your city [Bangalore,Kolkata,Chennai,Delhi] : ")
+    residence = input("Enter your city [Bangalore,Kolkata,Chennai,Delhi,Hyderabad] : ")
     age = int(input("Enter your age : "))
     avg_income = int(input("Enter your yearly income in lakhs : "))
     relationship = input("Enter your relationship [Single/Married] : ")
-    bank = input("Enter your bank name[ICICI,SBI,Axis,Canara] : ")
-    if is_valid_card(aadhar) and valid_phone(phone_num):
+    bank = input("Enter your bank name [ICICI,SBI,Axis,Canara] : ")
+
+    return_value = ""
+    if is_valid_card(aadhar) and valid_phone(phone_num) and age>18:
         df = pd.DataFrame({"Name":name,"Gender":gender,"Aadhar":aadhar,"Total_transaction":0,"Phone_Number":phone_num,"Residence":residence,"Age":age,"Avg_Income":avg_income,"Relationship":relationship,"Bank":bank},index=[0])
         df.to_csv("data/temp_node.csv",index=False)
+        return_value = "True"
     else:
-        print("The entered phone number or aadhar is incorrect")
+        print("Invalid information entered for phone_number/aadhar/age")
+        return_value = "False"
+
+    return return_value
 
 
 def append_blockchain(hashed_chain):
@@ -186,7 +192,7 @@ def build_graph_features(csv_file):
     df = df[important_columns]
 
     df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
-    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata","Hyderabad"],[1,2,3,4,5,6],inplace=True)
     df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
     df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
 
@@ -199,36 +205,62 @@ def write_nodes(L):
         file.write(str(str(val[0]) + "\t" + str(val[1]) + "\n"))
 
 
+def write_hash_to_file(L):
+    # open file in write mode
+    with open(r'data/hash_values.txt', 'w') as fp:
+        for item in L:
+            # write each item on a new line
+            fp.write("%s\n" % item)
+        print('Done')
+
+
 def update_graph():
     check = "Y"
 
     while check=="Y":
         # Build the blockchain
         hashed_chain = build_chain()
+        
         # Train the model
         train_model()
+        
+        print("===="*20)
+        print("Enter new user data.")
+
         # Get new data
-        read_new_node()
+        if read_new_node()=="False":
+            time.sleep(5)
+            check = input("Do you want to continue [Y/N] : ")
+            if check=="Y":
+                continue
+            else:
+                break
+
         new_features = new_node_features()
         print("The new node features are :",new_features)
-        # Predict new data
+        
         # Inside the try block
-        #try:
-        predicted_class = predict(new_features)
-        class_type = accept_new_node(predicted_class)
+        try:
+            predicted_class = predict(new_features)
+            class_type = accept_new_node(predicted_class)
 
-        if class_type==1:
-            add_to_existing_dataframe(class_type)    
-            hashed_chain = append_blockchain(hashed_chain)
-            G = build_graph()
-            build_graph_features("data/dataset.csv")
-            write_nodes(G.edges())
-        else:
-            print("The node has been rejected by PoS")
-        #except Exception as e:
-        #    print("The information you have entered is incorrect please try again.")
-        #    print("The exception is :",e)
+            if class_type==1:
+                add_to_existing_dataframe(class_type)    
+                hashed_chain = append_blockchain(hashed_chain)
+                G = build_graph()
+                build_graph_features("data/dataset.csv")
+                write_nodes(G.edges())
+            else:
+                print("The node has been rejected by PoS")
+            
+            print("The list of hash values stored in the database")
+            write_hash_to_file(hashed_chain)
+
+        except Exception as e:
+            print("The information you have entered is incorrect please try again.")
+            print("The exception is :",e)
+        
         # Outside the try block
-        check = input("Do you want to continue : [Y/N]")
+        check = input("Do you want to continue [Y/N] : ")
 
 update_graph()

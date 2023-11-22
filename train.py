@@ -104,7 +104,7 @@ def new_node_features():
     important_columns = ["Gender","Total_transaction","Residence","Age","Avg_Income","Relationship","Bank"]
     df = df[important_columns]
     df["Gender"].replace(["girl","boy"],[1,2],inplace=True)
-    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata"],[1,2,3,4,5],inplace=True)
+    df["Residence"].replace(["Chennai","Delhi","Mumbai","Bangalore","Kolkata","Hyderabad"],[1,2,3,4,5,6],inplace=True)
     df["Relationship"].replace(["Single","Married"],[1,2],inplace=True)
     df["Bank"].replace(["ICICI","Axis","SBI","Canara"],[1,2,3,4],inplace=True)
     features = df.to_numpy()
