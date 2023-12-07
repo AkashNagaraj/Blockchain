@@ -1,5 +1,6 @@
 cryptography
 torch
 pandas
+numpy
 networkx
 matplotlib

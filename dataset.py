@@ -16,7 +16,7 @@ def random_number():
 def random_name_gender():
     df = pd.read_csv("data/names.csv")
     r, c = df.shape
-    idx = random.randint(0,r)
+    idx = random.randint(0,r-1)
     return df["Name"][idx], df["Gender"][idx]
 
 def random_transaction_count():
